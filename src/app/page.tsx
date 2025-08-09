@@ -40,79 +40,125 @@ const FloatingCard = ({ children, delay = 0 }: { children: React.ReactNode; dela
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
   const [activeStep, setActiveStep] = useState(0);
-  const [isRoadmapActive, setIsRoadmapActive] = useState(false);
-  const [canScrollPast, setCanScrollPast] = useState(false);
   const heroRef = useRef(null);
-  const roadmapRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  
+  // Scroll hijacking refs and state
+  const roadmapSectionRef = useRef<HTMLDivElement | null>(null);
+  const rightPanelRef = useRef<HTMLDivElement | null>(null);
+  const [lockRoadmap, setLockRoadmap] = useState(false);
 
-  // Smoother scroll hijacking for roadmap section
+  // Detect enter/exit of the roadmap and toggle the lock
   useEffect(() => {
-    let isScrolling = false;
-    
-    const handleWheel = (e: WheelEvent) => {
-      if (!isRoadmapActive) return;
-      
-      const roadmapContent = document.getElementById('roadmap-content');
-      if (!roadmapContent) return;
-      
-      const { scrollTop, scrollHeight, clientHeight } = roadmapContent;
-      const isAtTop = scrollTop <= 10;
-      const isAtBottom = scrollTop >= scrollHeight - clientHeight - 10;
-      
-      // More lenient exit conditions
-      if (e.deltaY > 0 && isAtBottom && activeStep >= 3) {
-        // Scrolling down and at bottom of last step - allow page scroll to continue
-        setCanScrollPast(true);
-        setIsRoadmapActive(false);
-        return;
-      }
-      
-      if (e.deltaY < 0 && isAtTop && activeStep === 0) {
-        // Scrolling up and at top of first step - allow page scroll to continue up
-        setIsRoadmapActive(false);
-        return;
-      }
-      
-      // Prevent default and smooth scroll
-      e.preventDefault();
-      
-      if (!isScrolling) {
-        isScrolling = true;
-        
-        // Smoother scroll with momentum
-        const scrollAmount = e.deltaY * 0.8; // Reduce scroll sensitivity
-        roadmapContent.scrollTo({
-          top: roadmapContent.scrollTop + scrollAmount,
-          behavior: 'auto' // Instant for better control
-        });
-        
-        // Throttle scroll events
-        setTimeout(() => {
-          isScrolling = false;
-        }, 16); // ~60fps
-      }
-    };
+    const section = roadmapSectionRef.current;
+    if (!section) return;
 
-    // Observer for when roadmap section enters/exits viewport
-    const roadmapObserver = new IntersectionObserver(
+    const io = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
-            setIsRoadmapActive(true);
-            setCanScrollPast(false);
-          } else if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
-            setIsRoadmapActive(false);
-          }
-        });
+        const entry = entries[0];
+        // Lock when roadmap is meaningfully in view
+        if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
+          setLockRoadmap(true);
+        } else {
+          setLockRoadmap(false);
+        }
       },
       {
-        threshold: [0, 0.3, 0.7, 1],
-        rootMargin: '-5% 0px -5% 0px'  // Less aggressive margins
+        root: null,
+        threshold: [0, 0.4, 0.6, 1],
+        rootMargin: '0px 0px 0px 0px',
       }
     );
 
+    io.observe(section);
+    return () => io.disconnect();
+  }, []);
+
+  // Route wheel events to the right panel while locked
+  useEffect(() => {
+    const right = rightPanelRef.current;
+    if (!right) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (!lockRoadmap) return; // let the page handle it
+      // We will handle this scroll; stop the page
+      e.preventDefault();
+
+      const atTop = right.scrollTop <= 0;
+      const atBottom = right.scrollTop + right.clientHeight >= right.scrollHeight - 1;
+
+      // Route scroll delta to the right panel
+      right.scrollTop += e.deltaY;
+
+      // If at edges and user keeps scrolling, release lock so page can continue
+      if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+        setLockRoadmap(false);
+        // let the next wheel tick go to the page
+      }
+    };
+
+    // passive:false so we can preventDefault
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel as any);
+  }, [lockRoadmap]);
+
+  // Route touch (mobile) to the right panel while locked
+  useEffect(() => {
+    const right = rightPanelRef.current;
+    if (!right) return;
+
+    let startY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!lockRoadmap) return;
+      startY = e.touches[0].clientY;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!lockRoadmap) return;
+      const currentY = e.touches[0].clientY;
+      const delta = startY - currentY; // positive when swiping up (scroll down)
+
+      const atTop = right.scrollTop <= 0;
+      const atBottom = right.scrollTop + right.clientHeight >= right.scrollHeight - 1;
+
+      // If we can scroll inside right panel, consume it
+      const canScrollDown = !(atBottom && delta > 0);
+      const canScrollUp = !(atTop && delta < 0);
+
+      if (canScrollDown || canScrollUp) {
+        e.preventDefault();
+        right.scrollTop += delta;
+        startY = currentY;
+      } else {
+        // Edge reached: unlock so the page can move
+        setLockRoadmap(false);
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart as any);
+      window.removeEventListener('touchmove', onTouchMove as any);
+    };
+  }, [lockRoadmap]);
+
+  // Freeze body scroll while locked (prevents horizontal jitter)
+  useEffect(() => {
+    if (lockRoadmap) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [lockRoadmap]);
+
+  // Simple intersection observer for active step tracking
+  useEffect(() => {
     // Observer for roadmap steps
     const stepObserver = new IntersectionObserver(
       (entries) => {
@@ -125,28 +171,22 @@ export default function Home() {
       },
       {
         root: document.getElementById('roadmap-content'),
-        threshold: 0.5,
-        rootMargin: '-20% 0px -20% 0px'
+        threshold: 0.6,
+        rootMargin: '-10% 0px -10% 0px'
       }
     );
 
-    // Set up observers
-    if (roadmapRef.current) {
-      roadmapObserver.observe(roadmapRef.current);
-    }
-
-    const sections = document.querySelectorAll('[data-step]');
-    sections.forEach((section) => stepObserver.observe(section));
-
-    // Add wheel event listener
-    window.addEventListener('wheel', handleWheel, { passive: false });
+    // Wait for component to mount, then observe sections
+    const timer = setTimeout(() => {
+      const sections = document.querySelectorAll('[data-step]');
+      sections.forEach((section) => stepObserver.observe(section));
+    }, 100);
 
     return () => {
-      roadmapObserver.disconnect();
       stepObserver.disconnect();
-      window.removeEventListener('wheel', handleWheel);
+      clearTimeout(timer);
     };
-  }, [isRoadmapActive, activeStep]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50 overflow-x-hidden">
@@ -395,17 +435,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Problem Section - Enhanced with Grid & Dotted Lines */}
-      <section className="px-6 py-20 bg-neutral-50 relative overflow-hidden">
-        {/* Dotted Grid Background */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="h-full w-full" style={{
-            backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
-            backgroundSize: '24px 24px'
-          }} />
-        </div>
-        
-        <div className="max-w-6xl mx-auto relative z-10">
+      {/* Problem Section - Adaline Metrics Style */}
+      <section className="px-6 py-20 bg-white">
+        <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -421,106 +453,84 @@ export default function Home() {
             </p>
           </motion.div>
           
-          {/* Enhanced Grid Layout with Dotted Connections */}
-          <div className="relative">
-            {/* Connecting dotted lines */}
-            <div className="hidden lg:block absolute top-1/2 left-1/3 w-1/3 h-px border-t-2 border-dotted border-gray-300 -translate-y-1/2" />
-            <div className="hidden lg:block absolute top-1/2 right-1/3 w-1/3 h-px border-t-2 border-dotted border-gray-300 -translate-y-1/2" />
-            
-            <div className="grid lg:grid-cols-3 gap-8 lg:gap-16">
-              {[
-                { 
-                  stat: '15-20hrs', 
-                  description: 'Lost per week on manual tasks',
-                  icon: '⏰'
-                },
-                { 
-                  stat: '8+', 
-                  description: 'Systems & spreadsheets per dealership',
-                  icon: '📊'
-                },
-                { 
-                  stat: '20-30%', 
-                  description: 'Profit opportunities missed',
-                  icon: '💸'
-                }
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: i * 0.2, duration: 0.8, ease: "easeOut" }}
-                  viewport={{ once: true }}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="relative"
-                >
-                  {/* Card with dotted border */}
-                  <div className="bg-white rounded-2xl p-8 text-center relative border-2 border-dashed border-gray-200 hover:border-gray-300 transition-all duration-300">
-                    {/* Animated pulse background */}
+          {/* Adaline-Style Metrics */}
+          <div className="space-y-12">
+            {[
+              {
+                stat: '15-20hrs',
+                primary: 'Lost per week',
+                secondary: 'on manual tasks'
+              },
+              {
+                stat: '8+',
+                primary: 'Systems & spreadsheets',
+                secondary: 'per dealership'
+              },
+              {
+                stat: '20-30%',
+                primary: 'Profit opportunities',
+                secondary: 'missed daily'
+              },
+              {
+                stat: '99.9%',
+                primary: 'Manual processes',
+                secondary: 'that should be automated'
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+                viewport={{ once: true }}
+                className="relative"
+              >
+                <div className="grid lg:grid-cols-12 gap-8 items-center py-8">
+                  {/* Large Statistic */}
+                  <div className="lg:col-span-4">
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-br from-gray-50 to-transparent rounded-2xl opacity-0"
-                      whileHover={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                    
-                    <div className="relative z-10">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        whileInView={{ scale: 1 }}
-                        transition={{ delay: i * 0.2 + 0.3, duration: 0.5, type: "spring" }}
-                        className="text-3xl mb-4"
-                      >
-                        {item.icon}
-                      </motion.div>
-                      
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        transition={{ delay: i * 0.2 + 0.5, duration: 0.6 }}
-                        className="text-5xl font-bold text-gray-900 mb-4"
-                      >
-                        {item.stat}
-                      </motion.div>
-                      
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        transition={{ delay: i * 0.2 + 0.7, duration: 0.6 }}
-                        className="text-gray-600 leading-relaxed"
-                      >
-                        {item.description}
-                      </motion.div>
-                    </div>
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.1 + 0.2, duration: 0.6 }}
+                      viewport={{ once: true }}
+                      className="text-6xl lg:text-7xl font-bold text-gray-900"
+                    >
+                      {item.stat}
+                    </motion.div>
                   </div>
                   
-                  {/* Floating dot indicator */}
+                  {/* Description */}
+                  <div className="lg:col-span-8">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 + 0.4, duration: 0.6 }}
+                      viewport={{ once: true }}
+                      className="space-y-1"
+                    >
+                      <div className="text-lg font-medium text-gray-900">
+                        {item.primary}
+                      </div>
+                      <div className="text-lg text-gray-600">
+                        {item.secondary}
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+                
+                {/* Dotted line separator */}
+                {i < 3 && (
                   <motion.div
-                    className="absolute -top-2 -right-2 w-4 h-4 bg-red-400 rounded-full"
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    transition={{ delay: i * 0.1 + 0.6, duration: 0.8 }}
+                    viewport={{ once: true }}
+                    className="h-px border-t-2 border-dotted border-gray-200 origin-left"
                   />
-                </motion.div>
-              ))}
-            </div>
+                )}
+              </motion.div>
+            ))}
           </div>
-          
-          {/* Bottom section with dotted accent */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-            viewport={{ once: true }}
-            className="mt-16 text-center"
-          >
-            <div className="inline-flex items-center gap-4 px-6 py-3 bg-white rounded-full border border-dashed border-gray-300">
-              <span className="text-sm text-gray-600">The cost of doing nothing keeps growing</span>
-              <motion.div
-                className="w-2 h-2 bg-red-400 rounded-full"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-            </div>
-          </motion.div>
         </div>
       </section>
 
@@ -657,65 +667,143 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Simple Benefits Section */}
-      <section className="px-6 py-20 bg-neutral-50">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* Adaline-Style Testimonials & Metrics Section */}
+      <section className="px-6 py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="mb-16"
+            className="text-center mb-16"
           >
             <h2 className="text-4xl font-roc font-medium text-gray-900 mb-6">
               Join Dealerships Already Making 23% More Profit
             </h2>
-            <p className="text-xl text-gray-600">
-              See why 500+ dealers are ditching their old systems.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              From small independent dealers to multi-location enterprises, DealerBarn helps dealerships streamline operations and scale confidently.
             </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 gap-8 mb-16 max-w-3xl mx-auto">
-            {[
-              'Eliminate 90% of manual spreadsheet work',
-              'Cut inventory tracking errors to near-zero', 
-              'Process vehicles 50% faster',
-              'Never lose another sale to poor communication',
-              'Scale to new locations in days, not months',
-              'Integrate with your existing DMS seamlessly'
-            ].map((benefit, i) => (
+          {/* Grid Layout with Testimonials and Metrics */}
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column - Testimonials */}
+            <div className="lg:col-span-8 space-y-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                {[
+                  {
+                    quote: "DealerBarn has become an invaluable tool for my team to streamline our inventory management...",
+                    author: "Sarah M.",
+                    title: "Operations Manager for Peterson Auto Group"
+                  },
+                  {
+                    quote: "...DealerBarn is simply the best platform I've found that bridges the gap between manual processes & automation...",
+                    author: "Mike R.",
+                    title: "General Manager @ Metro Motors"
+                  },
+                  {
+                    quote: "...DealerBarn is simply the best platform I've found that bridges the gap between manual processes & automation...",
+                    author: "Lisa K.",
+                    title: "Owner @ Valley Car Sales"
+                  }
+                ].map((testimonial, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1, duration: 0.6 }}
+                    viewport={{ once: true }}
+                    className="bg-white p-6 rounded-lg border border-gray-200"
+                  >
+                    <blockquote className="text-gray-700 mb-4 leading-relaxed">
+                      "{testimonial.quote}"
+                    </blockquote>
+                    <cite className="not-italic">
+                      <div className="font-medium text-gray-900">{testimonial.author}</div>
+                      <div className="text-sm text-gray-600">{testimonial.title}</div>
+                    </cite>
+                  </motion.div>
+                ))}
+              </div>
+              
+              {/* Company Logos Row */}
               <motion.div
-                key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.6 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
                 viewport={{ once: true }}
-                className="flex items-center gap-3 text-left"
+                className="grid grid-cols-4 gap-8 items-center py-8"
               >
-                <div className="text-green-600 text-sm">✓</div>
-                <span className="text-gray-700">{benefit}</span>
+                {[
+                  { name: 'AutoMax', logo: 'AM' },
+                  { name: 'CarHub', logo: 'CH' }, 
+                  { name: 'DrivePoint', logo: 'DP' },
+                  { name: 'MotorWorks', logo: 'MW' }
+                ].map((company, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.1 + 0.2, duration: 0.5 }}
+                    viewport={{ once: true }}
+                    className="text-center"
+                  >
+                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-bold text-lg mx-auto mb-2">
+                      {company.logo}
+                    </div>
+                    <div className="text-sm text-gray-500 font-medium">{company.name}</div>
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
+            </div>
+            
+            {/* Right Column - Scattered Metrics */}
+            <div className="lg:col-span-4 space-y-16">
+              
+              {/* Metric 1 */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="text-6xl font-bold text-gray-900 mb-2">90%</div>
+                <div className="text-gray-600">Less manual work</div>
+              </motion.div>
+              
+              {/* Metric 2 */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                viewport={{ once: true }}
+                className="text-center lg:text-right"
+              >
+                <div className="text-6xl font-bold text-gray-900 mb-2">50%</div>
+                <div className="text-gray-600">Faster processing</div>
+              </motion.div>
+              
+              {/* Bottom metric */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.6 }}
+                viewport={{ once: true }}
+                className="bg-white p-6 rounded-lg border border-gray-200 text-center"
+              >
+                <div className="text-4xl font-bold text-gray-900 mb-2">23%</div>
+                <div className="text-gray-600">Average profit increase</div>
+              </motion.div>
+              
+            </div>
           </div>
-          
-          {/* Simple Testimonial */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="bg-white rounded-xl p-8 border border-gray-200"
-          >
-            <blockquote className="text-xl italic text-gray-700 mb-4">
-              "Finally, a system built by people who actually understand dealerships."
-            </blockquote>
-            <cite className="text-gray-900 font-medium">— Mike Patterson, Patterson Auto Group</cite>
-          </motion.div>
         </div>
       </section>
 
       {/* Interactive Roadmap with Sticky Navigation */}
-      <section className="bg-white relative" id="roadmap" ref={roadmapRef}>
+      <section className="bg-white relative" id="roadmap" ref={roadmapSectionRef}>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
@@ -733,12 +821,12 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* Two-column layout: Sticky nav + Scrollable content */}
-          <div className="flex h-screen">
+          {/* Two-column layout: Sticky nav + Natural scrollable content */}
+          <div className="flex min-h-screen">
             {/* Left Rail - Sticky Navigation */}
             <div className="w-1/3 px-6">
-              <div className="sticky top-24 h-full flex items-center">
-                <div className="w-full space-y-2">
+              <div className="sticky top-24">
+                <div className="w-full space-y-2 py-8">
                   {[
                     { id: 'beta-onboarding', title: 'Beta Onboarding', date: 'Q2 2025', status: 'active' },
                     { id: 'automation-rollout', title: 'Automation Rollout', date: 'Q3 2025', status: 'upcoming' },
@@ -781,202 +869,196 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Panel - Scrollable Content with Independent Scroll */}
+            {/* Right Panel - Scrollable Content with Hijacking */}
             <div className="flex-1 px-6">
               <div 
                 id="roadmap-content"
-                className="h-screen overflow-y-auto scrollbar-hide"
-                style={{
-                  scrollBehavior: 'smooth',
-                  msOverflowStyle: 'none',
-                  scrollbarWidth: 'none'
-                }}
+                ref={rightPanelRef}
+                className="space-y-12 py-8 h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain scroll-smooth snap-y snap-mandatory"
               >
-                <div className="space-y-8 py-8">
-                  {/* Beta Onboarding */}
-                  <motion.div
-                    id="beta-onboarding"
-                    data-step="0"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    viewport={{ once: true, margin: "-20%" }}
-                    className="min-h-screen flex items-center"
-                  >
-                    <div className="w-full">
-                      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                        <div className="mb-8">
-                          <div className="text-gray-500 font-medium text-sm mb-2">Q2 2025</div>
-                          <h3 className="text-3xl font-medium text-gray-900 mb-4">Beta Onboarding</h3>
-                          <p className="text-xl text-gray-600 leading-relaxed">
-                            Get your dealership set up with our core inventory management system and start experiencing the future of dealership operations.
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {[
-                            'Complete system setup & configuration',
-                            'Import your existing inventory data',
-                            'Team onboarding & training sessions',
-                            'Custom workflow configuration',
-                            'Integration with your current DMS',
-                            'Performance baseline establishment'
-                          ].map((item, i) => (
-                            <motion.div
-                              key={i}
-                              initial={{ opacity: 0, x: -20 }}
-                              whileInView={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.05, duration: 0.4 }}
-                              viewport={{ once: true }}
-                              className="flex items-center gap-3 py-2"
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
-                              <span className="text-gray-700">{item}</span>
-                            </motion.div>
-                          ))}
-                        </div>
+                {/* Beta Onboarding */}
+                <motion.div
+                  id="beta-onboarding"
+                  data-step="0"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  viewport={{ once: true, margin: "-20%" }}
+                  className="py-12 min-h-[80vh] snap-start"
+                >
+                  <div className="w-full">
+                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                      <div className="mb-8">
+                        <div className="text-gray-500 font-medium text-sm mb-2">Q2 2025</div>
+                        <h3 className="text-3xl font-medium text-gray-900 mb-4">Beta Onboarding</h3>
+                        <p className="text-xl text-gray-600 leading-relaxed">
+                          Get your dealership set up with our core inventory management system and start experiencing the future of dealership operations.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {[
+                          'Complete system setup & configuration',
+                          'Import your existing inventory data',
+                          'Team onboarding & training sessions',
+                          'Custom workflow configuration',
+                          'Integration with your current DMS',
+                          'Performance baseline establishment'
+                        ].map((item, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05, duration: 0.4 }}
+                            viewport={{ once: true }}
+                            className="flex items-center gap-3 py-2"
+                          >
+                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
+                            <span className="text-gray-700">{item}</span>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
+                </motion.div>
 
-                  {/* Automation Rollout */}
-                  <motion.div
-                    id="automation-rollout"
-                    data-step="1"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    viewport={{ once: true, margin: "-20%" }}
-                    className="min-h-screen flex items-center"
-                  >
-                    <div className="w-full">
-                      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                        <div className="mb-8">
-                          <div className="text-gray-500 font-medium text-sm mb-2">Q3 2025</div>
-                          <h3 className="text-3xl font-medium text-gray-900 mb-4">Automation Rollout</h3>
-                          <p className="text-xl text-gray-600 leading-relaxed">
-                            Activate automated workflows and eliminate manual processes that have been slowing down your operations.
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {[
-                            'Automated vehicle intake processes',
-                            'Smart pricing optimization',
-                            'Workflow automation deployment',
-                            'Intelligent task routing',
-                            'Automated reporting systems',
-                            'Process optimization analysis'
-                          ].map((item, i) => (
-                            <motion.div
-                              key={i}
-                              initial={{ opacity: 0, x: -20 }}
-                              whileInView={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.05, duration: 0.4 }}
-                              viewport={{ once: true }}
-                              className="flex items-center gap-3 py-2"
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
-                              <span className="text-gray-700">{item}</span>
-                            </motion.div>
-                          ))}
-                        </div>
+                {/* Automation Rollout */}
+                <motion.div
+                  id="automation-rollout"
+                  data-step="1"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  viewport={{ once: true, margin: "-20%" }}
+                  className="py-12 min-h-[80vh] snap-start"
+                >
+                  <div className="w-full">
+                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                      <div className="mb-8">
+                        <div className="text-gray-500 font-medium text-sm mb-2">Q3 2025</div>
+                        <h3 className="text-3xl font-medium text-gray-900 mb-4">Automation Rollout</h3>
+                        <p className="text-xl text-gray-600 leading-relaxed">
+                          Activate automated workflows and eliminate manual processes that have been slowing down your operations.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {[
+                          'Automated vehicle intake processes',
+                          'Smart pricing optimization',
+                          'Workflow automation deployment',
+                          'Intelligent task routing',
+                          'Automated reporting systems',
+                          'Process optimization analysis'
+                        ].map((item, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05, duration: 0.4 }}
+                            viewport={{ once: true }}
+                            className="flex items-center gap-3 py-2"
+                          >
+                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
+                            <span className="text-gray-700">{item}</span>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
+                </motion.div>
 
-                  {/* Advanced Analytics */}
-                  <motion.div
-                    id="advanced-analytics"
-                    data-step="2"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    viewport={{ once: true, margin: "-20%" }}
-                    className="min-h-screen flex items-center"
-                  >
-                    <div className="w-full">
-                      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                        <div className="mb-8">
-                          <div className="text-gray-500 font-medium text-sm mb-2">Q4 2025</div>
-                          <h3 className="text-3xl font-medium text-gray-900 mb-4">Advanced Analytics</h3>
-                          <p className="text-xl text-gray-600 leading-relaxed">
-                            Unlock predictive insights and advanced reporting capabilities to make data-driven decisions.
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {[
-                            'Predictive sales forecasting',
-                            'Market trend analysis',
-                            'Profit optimization insights',
-                            'Customer behavior analytics',
-                            'Inventory performance metrics',
-                            'Advanced dashboard customization'
-                          ].map((item, i) => (
-                            <motion.div
-                              key={i}
-                              initial={{ opacity: 0, x: -20 }}
-                              whileInView={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.05, duration: 0.4 }}
-                              viewport={{ once: true }}
-                              className="flex items-center gap-3 py-2"
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
-                              <span className="text-gray-700">{item}</span>
-                            </motion.div>
-                          ))}
-                        </div>
+                {/* Advanced Analytics */}
+                <motion.div
+                  id="advanced-analytics"
+                  data-step="2"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  viewport={{ once: true, margin: "-20%" }}
+                  className="py-12 min-h-[80vh] snap-start"
+                >
+                  <div className="w-full">
+                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                      <div className="mb-8">
+                        <div className="text-gray-500 font-medium text-sm mb-2">Q4 2025</div>
+                        <h3 className="text-3xl font-medium text-gray-900 mb-4">Advanced Analytics</h3>
+                        <p className="text-xl text-gray-600 leading-relaxed">
+                          Unlock predictive insights and advanced reporting capabilities to make data-driven decisions.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {[
+                          'Predictive sales forecasting',
+                          'Market trend analysis',
+                          'Profit optimization insights',
+                          'Customer behavior analytics',
+                          'Inventory performance metrics',
+                          'Advanced dashboard customization'
+                        ].map((item, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05, duration: 0.4 }}
+                            viewport={{ once: true }}
+                            className="flex items-center gap-3 py-2"
+                          >
+                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
+                            <span className="text-gray-700">{item}</span>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
+                </motion.div>
 
-                  {/* Scale & Expand */}
-                  <motion.div
-                    id="scale-expand"
-                    data-step="3"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    viewport={{ once: true, margin: "-20%" }}
-                    className="min-h-screen flex items-center"
-                  >
-                    <div className="w-full">
-                      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                        <div className="mb-8">
-                          <div className="text-gray-500 font-medium text-sm mb-2">Q1 2026</div>
-                          <h3 className="text-3xl font-medium text-gray-900 mb-4">Scale & Expand</h3>
-                          <p className="text-xl text-gray-600 leading-relaxed">
-                            Add new locations and scale your operations seamlessly across multiple dealership sites.
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {[
-                            'Multi-location management tools',
-                            'Franchise-ready scaling features',
-                            'Enterprise-grade security',
-                            'Advanced user permission systems',
-                            'Cross-location reporting',
-                            'Strategic growth planning tools'
-                          ].map((item, i) => (
-                            <motion.div
-                              key={i}
-                              initial={{ opacity: 0, x: -20 }}
-                              whileInView={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.05, duration: 0.4 }}
-                              viewport={{ once: true }}
-                              className="flex items-center gap-3 py-2"
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
-                              <span className="text-gray-700">{item}</span>
-                            </motion.div>
-                          ))}
-                        </div>
+                {/* Scale & Expand */}
+                <motion.div
+                  id="scale-expand"
+                  data-step="3"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  viewport={{ once: true, margin: "-20%" }}
+                  className="py-12 min-h-[80vh] snap-start"
+                >
+                  <div className="w-full">
+                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                      <div className="mb-8">
+                        <div className="text-gray-500 font-medium text-sm mb-2">Q1 2026</div>
+                        <h3 className="text-3xl font-medium text-gray-900 mb-4">Scale & Expand</h3>
+                        <p className="text-xl text-gray-600 leading-relaxed">
+                          Add new locations and scale your operations seamlessly across multiple dealership sites.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {[
+                          'Multi-location management tools',
+                          'Franchise-ready scaling features',
+                          'Enterprise-grade security',
+                          'Advanced user permission systems',
+                          'Cross-location reporting',
+                          'Strategic growth planning tools'
+                        ].map((item, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05, duration: 0.4 }}
+                            viewport={{ once: true }}
+                            className="flex items-center gap-3 py-2"
+                          >
+                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0" />
+                            <span className="text-gray-700">{item}</span>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
-                  </motion.div>
-                </div>
+                  </div>
+                </motion.div>
               </div>
             </div>
           </div>
