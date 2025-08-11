@@ -1,6 +1,9 @@
 'use client';
 
 import Logo from '@/components/Logo';
+import ParticleField from '@/components/ParticleField';
+import HeroBg3D from '@/components/HeroBg3D';
+import InteractiveChart from '@/components/InteractiveChart';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 
@@ -29,6 +32,7 @@ export default function Home() {
 
   const heroRef = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
 
   // Roadmap locking & refs
@@ -159,13 +163,15 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-50 overflow-x-hidden">
+    <div className="min-h-screen bg-neutral-50 overflow-x-hidden relative">
+      {/* Global Particle Field */}
+      <ParticleField />
       {/* Animated Navigation */}
       <motion.nav
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-white/90 backdrop-blur-lg border-b border-gray-100"
+        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 glass-strong border-b border-white/20"
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <motion.div className="flex items-center gap-8" whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
@@ -209,12 +215,9 @@ export default function Home() {
       </motion.nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative px-6 pt-32 pb-20 min-h-screen flex items-center bg-white">
-        {/* Subtle Background Animation */}
-        <motion.div className="absolute inset-0 opacity-5" style={{ y }}>
-          <div className="absolute top-20 left-10 w-72 h-72 bg-gray-200 rounded-full blur-3xl" />
-          <div className="absolute top-40 right-20 w-96 h-96 bg-gray-300 rounded-full blur-3xl" />
-        </motion.div>
+      <section ref={heroRef} className="relative px-6 pt-32 pb-20 min-h-screen flex items-center bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 overflow-hidden">
+        {/* Premium 3D Background */}
+        <HeroBg3D />
 
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
           <div>
@@ -234,10 +237,10 @@ export default function Home() {
               className="text-5xl sm:text-6xl font-roc font-medium text-gray-900 mb-6 leading-tight"
             >
               Stop Juggling
-              <motion.span className="block text-gray-900" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 0.8 }}>
+              <motion.span className="block text-shimmer" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 0.8 }}>
                 Spreadsheets.
               </motion.span>
-              Start Growing Your Dealership.
+              <span className="text-gradient">Start Growing Your Dealership.</span>
             </motion.h1>
 
             <motion.p
@@ -252,14 +255,14 @@ export default function Home() {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8 }} className="flex flex-col sm:flex-row gap-4 mb-12">
               <motion.button
-                className="bg-blue-800 hover:bg-blue-900 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors relative overflow-hidden"
-                whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(59, 130, 246, 0.2)' }}
+                className="btn-premium text-white px-8 py-4 rounded-xl font-medium text-lg shadow-2xl"
+                whileHover={{ scale: 1.05, boxShadow: '0 25px 50px rgba(102, 126, 234, 0.4)' }}
                 whileTap={{ scale: 0.95 }}
+                style={{ animation: 'pulse-glow 3s ease-in-out infinite' }}
               >
-                <motion.span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700" initial={{ x: '-100%' }} whileHover={{ x: '0%' }} transition={{ duration: 0.3 }} />
                 <span className="relative z-10">Join 500+ Dealers in Beta</span>
               </motion.button>
-              <motion.button className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-lg font-medium text-lg transition-colors" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.button className="glass border border-white/30 hover:bg-white/20 text-gray-700 px-8 py-4 rounded-xl font-medium text-lg transition-all duration-300" whileHover={{ scale: 1.05, boxShadow: '0 15px 30px rgba(0, 0, 0, 0.1)' }} whileTap={{ scale: 0.95 }}>
                 See 3-Minute Demo
               </motion.button>
             </motion.div>
@@ -284,8 +287,8 @@ export default function Home() {
 
           {/* Interactive Demo Mockup */}
           <motion.div initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 1, ease: 'easeOut' }} className="relative">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+            <div className="glass-strong rounded-3xl shadow-2xl overflow-hidden border border-white/20 interactive-card">
+              <div className="bg-white/10 backdrop-blur-xl px-6 py-4 border-b border-white/20 flex items-center gap-2">
                 <div className="flex gap-2">
                   <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
                   <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
@@ -293,49 +296,8 @@ export default function Home() {
                 </div>
                 <div className="flex-1 text-center text-sm text-gray-600">DealerBarn Dashboard</div>
               </div>
-              <div className="p-6 h-80">
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 0.8 }} className="space-y-4">
-                  {/* Animated Chart Bars */}
-                  <div className="space-y-2">
-                    {[85, 65, 90, 45, 75].map((width, i) => (
-                      <motion.div key={i} className="flex items-center gap-3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.4 + i * 0.1, duration: 0.6 }}>
-                        <div className="w-16 text-xs text-gray-500">Q{i + 1} 2024</div>
-                        <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${width}%` }}
-                            transition={{ delay: 1.6 + i * 0.1, duration: 0.8, ease: 'easeOut' }}
-                          />
-                        </div>
-                        <div className="text-xs text-gray-700 w-8">{width}%</div>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* Floating metrics */}
-                  <motion.div
-                    className="absolute top-20 right-4 bg-white rounded-lg shadow-lg p-3 border border-gray-100"
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: 2, duration: 0.6 }}
-                  >
-                    <div className="text-xs text-gray-500">Revenue Growth</div>
-                    <div className="text-lg font-bold text-gray-700">+23%</div>
-                  </motion.div>
-
-                  <motion.div
-                    className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 border border-gray-100"
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: 2.2, duration: 0.6 }}
-                  >
-                    <div className="text-xs text-gray-500">Cars Processed</div>
-                    <div className="text-lg font-bold text-gray-700">
-                      <AnimatedCounter end={247} duration={1.5} />
-                    </div>
-                  </motion.div>
-                </motion.div>
+              <div className="p-2">
+                <InteractiveChart />
               </div>
             </div>
 
@@ -383,7 +345,7 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section id="features" className="px-6 py-20 bg-white relative">
+      <section id="features" className="px-6 py-20 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }} className="text-center mb-20">
             <h2 className="text-4xl font-roc font-medium text-gray-900 mb-6">Everything You Need. Nothing You Don&apos;t.</h2>
@@ -409,7 +371,7 @@ export default function Home() {
                   transition={{ delay: i * 0.15, duration: 0.7, ease: 'easeOut' }}
                   viewport={{ once: true }}
                   whileHover={{ y: -8 }}
-                  className="relative text-center group"
+                  className="relative text-center group interactive-card"
                 >
                   <div className="absolute inset-0 border-2 border-dashed border-gray-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-150" />
                   <div className="relative z-10">
@@ -736,8 +698,28 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="px-6 py-20 bg-blue-800 text-white">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="px-6 py-20 bg-gradient-to-br from-blue-900 via-blue-800 to-purple-900 text-white relative overflow-hidden">
+        {/* Premium Background Effects */}
+        <div className="absolute inset-0">
+          <motion.div 
+            className="absolute top-20 left-10 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
+          <motion.div 
+            className="absolute bottom-20 right-10 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.2, 0.4, 0.2],
+            }}
+            transition={{ duration: 5, repeat: Infinity }}
+          />
+        </div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }} className="mb-12">
             <h2 className="text-4xl font-roc font-medium mb-6">Join 500+ Dealerships Already Transforming Their Operations</h2>
             <p className="text-xl text-blue-100 mb-8">Get VIP early access to DealerBarn and be among the first to eliminate spreadsheet chaos forever.</p>
@@ -756,9 +738,17 @@ export default function Home() {
             <input
               type="email"
               placeholder="Enter your email address"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-900"
+              className="flex-1 px-4 py-3 glass border border-white/30 rounded-xl focus:ring-2 focus:ring-white/50 focus:border-white/50 outline-none bg-white/10 text-white placeholder-white/70 backdrop-blur-xl"
             />
-            <motion.button type="submit" className="bg-white hover:bg-gray-100 text-blue-800 px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.button 
+              type="submit" 
+              className="bg-white hover:bg-gray-100 text-blue-800 px-6 py-3 rounded-xl font-medium transition-all duration-300 whitespace-nowrap shadow-2xl" 
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: '0 20px 40px rgba(255, 255, 255, 0.2)'
+              }} 
+              whileTap={{ scale: 0.95 }}
+            >
               Secure Your Spot
             </motion.button>
           </motion.form>
