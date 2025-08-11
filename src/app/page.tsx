@@ -4,6 +4,9 @@ import Logo from '@/components/Logo';
 import ParticleField from '@/components/ParticleField';
 import HeroBg3D from '@/components/HeroBg3D';
 import InteractiveChart from '@/components/InteractiveChart';
+import Premium3DCard from '@/components/Premium3DCard';
+import ParticleConnections from '@/components/ParticleConnections';
+import FloatingDataViz from '@/components/FloatingDataViz';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 
@@ -344,69 +347,274 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="px-6 py-20 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }} className="text-center mb-20">
-            <h2 className="text-4xl font-roc font-medium text-gray-900 mb-6">Everything You Need. Nothing You Don&apos;t.</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">DealerBarn replaces 6+ tools with one intelligent platform designed specifically for modern dealerships.</p>
-          </motion.div>
+      {/* Features - Premium Redesign */}
+      <section id="features" className="px-6 py-32 relative overflow-hidden min-h-screen">
+        {/* Epic Background */}
+        <div className="absolute inset-0">
+          {/* Gradient mesh background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20" />
+          
+          {/* Animated grid overlay */}
+          <motion.div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
+              `,
+              backgroundSize: '100px 100px',
+            }}
+            animate={{
+              backgroundPosition: ['0px 0px', '100px 100px'],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
 
-          <div className="relative">
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px border-t-2 border-dotted border-gray-300 -translate-y-1/2" />
-            <div className="hidden lg:block absolute top-1/2 left-1/3 w-1/3 h-px border-t-2 border-dotted border-gray-300 -translate-y-1/2" />
-            <div className="hidden lg:block absolute top-1/2 right-1/3 w-1/3 h-px border-t-2 border-dotted border-gray-300 -translate-y-1/2" />
+          {/* Floating data visualizations */}
+          <FloatingDataViz />
+          
+          {/* Particle connections */}
+          <ParticleConnections cardCount={4} />
 
-            <div className="grid lg:grid-cols-4 gap-8 lg:gap-16">
+          {/* Epic light rays */}
+          <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-blue-500/30 to-transparent transform rotate-12" />
+          <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-purple-500/30 to-transparent transform -rotate-12" />
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Premium Section Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }} 
+            whileInView={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 1, ease: 'easeOut' }} 
+            viewport={{ once: true }} 
+            className="text-center mb-24"
+          >
+            <motion.div
+              className="inline-block mb-6"
+              animate={{
+                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+              }}
+              transition={{ duration: 5, repeat: Infinity }}
+            >
+              <h2 className="text-6xl md:text-7xl font-roc font-bold mb-6 leading-tight">
+                <motion.span
+                  className="bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent"
+                  style={{
+                    backgroundSize: '200% 200%',
+                  }}
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                >
+                  Everything You Need.
+                </motion.span>
+                <br />
+                <motion.span 
+                  className="text-white/90"
+                  animate={{
+                    textShadow: [
+                      '0 0 20px rgba(255,255,255,0.5)',
+                      '0 0 30px rgba(147,197,253,0.8)',
+                      '0 0 20px rgba(255,255,255,0.5)',
+                    ],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  Nothing You Don&apos;t.
+                </motion.span>
+              </h2>
+            </motion.div>
+            
+            <motion.p 
+              className="text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              DealerBarn replaces 6+ tools with one <span className="text-blue-400 font-semibold">intelligent platform</span> designed specifically for modern dealerships.
+            </motion.p>
+
+            {/* Floating metrics preview */}
+            <motion.div
+              className="flex justify-center gap-8 text-center"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              viewport={{ once: true }}
+            >
               {[
-                { title: 'Smart Inventory Hub', description: 'Track every vehicle and part across all locations in real-time', icon: '🚗' },
-                { title: 'Automated Workflows', description: 'From acquisition to sale—automate the boring stuff', icon: '⚡' },
-                { title: 'Predictive Analytics', description: 'Know which cars will sell before they hit the lot', icon: '📊' },
-                { title: 'Multi-Location Management', description: 'Manage 1 or 100 locations from one dashboard', icon: '🌟' },
-              ].map((feature, i) => (
+                { value: '6+', label: 'Tools Replaced' },
+                { value: '90%', label: 'Less Manual Work' },
+                { value: '24/7', label: 'Auto-Sync' },
+              ].map((stat, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 40, scale: 0.9 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: i * 0.15, duration: 0.7, ease: 'easeOut' }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -8 }}
-                  className="relative text-center group interactive-card"
+                  className="glass p-4 rounded-xl border border-white/20"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  animate={{
+                    y: [0, -5, 0],
+                  }}
+                  transition={{
+                    y: { duration: 3, repeat: Infinity, delay: i * 0.5 },
+                  }}
                 >
-                  <div className="absolute inset-0 border-2 border-dashed border-gray-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-150" />
-                  <div className="relative z-10">
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      whileInView={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: i * 0.15 + 0.3, duration: 0.6, type: 'spring' }}
-                      viewport={{ once: true }}
-                      className="relative inline-block mb-6"
-                    >
-                      <div className="w-20 h-20 bg-gray-50 border-2 border-gray-200 rounded-full flex items-center justify-center text-3xl mx-auto group-hover:border-gray-300 transition-colors duration-300">
-                        {feature.icon}
-                      </div>
-                      <motion.div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-400 rounded-full" animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }} />
-                    </motion.div>
-
-                    <motion.h3 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.15 + 0.5, duration: 0.6 }} viewport={{ once: true }} className="text-xl font-medium text-gray-900 mb-4">
-                      {feature.title}
-                    </motion.h3>
-
-                    <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.15 + 0.7, duration: 0.6 }} viewport={{ once: true }} className="text-gray-600 leading-relaxed">
-                      {feature.description}
-                    </motion.p>
-                  </div>
-                  <motion.div initial={{ scale: 0, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} transition={{ delay: i * 0.15 + 0.8, duration: 0.5 }} viewport={{ once: true }} className="hidden lg:block absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-300 border-2 border-white rounded-full shadow-sm -left-2" />
+                  <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                  <div className="text-sm text-gray-300">{stat.label}</div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Premium 3D Feature Cards Grid */}
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
+            {[
+              {
+                title: 'Smart Inventory Hub',
+                description: 'Track every vehicle and part across all locations with real-time synchronization and intelligent forecasting.',
+                iconType: 'inventory' as const,
+                gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                features: [
+                  'Real-time vehicle tracking',
+                  'Automated part management',
+                  'Cross-location visibility',
+                  'Smart inventory alerts',
+                  'Predictive restocking'
+                ]
+              },
+              {
+                title: 'Automated Workflows',
+                description: 'From acquisition to sale—eliminate manual processes with intelligent automation that scales with your business.',
+                iconType: 'automation' as const,
+                gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                features: [
+                  'Automated vehicle intake',
+                  'Smart pricing optimization',
+                  'Workflow orchestration',
+                  'Task automation',
+                  'Process optimization'
+                ]
+              },
+              {
+                title: 'Predictive Analytics',
+                description: 'Know which cars will sell before they hit the lot with AI-powered insights and market trend analysis.',
+                iconType: 'analytics' as const,
+                gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                features: [
+                  'Sales forecasting',
+                  'Market trend analysis',
+                  'Pricing optimization',
+                  'Customer insights',
+                  'Performance metrics'
+                ]
+              },
+              {
+                title: 'Multi-Location Management',
+                description: 'Scale from 1 to 100+ locations seamlessly with centralized control and distributed operations.',
+                iconType: 'management' as const,
+                gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                features: [
+                  'Centralized dashboard',
+                  'Location-specific controls',
+                  'Cross-site reporting',
+                  'Franchise management',
+                  'Scalable architecture'
+                ]
+              },
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 100, rotateY: -15 }}
+                whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
+                transition={{ 
+                  delay: i * 0.2, 
+                  duration: 0.8, 
+                  ease: 'easeOut',
+                  type: 'spring',
+                  stiffness: 100
+                }}
+                viewport={{ once: true, margin: '-100px' }}
+                className="relative"
+              >
+                <Premium3DCard
+                  {...feature}
+                  index={i}
+                />
+                
+                {/* Card connection lines */}
+                {i < 3 && (
+                  <motion.div
+                    className="hidden lg:block absolute top-1/2 -right-8 w-16 h-px"
+                    style={{
+                      background: feature.gradient,
+                      filter: 'blur(1px)',
+                    }}
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    transition={{ delay: i * 0.2 + 0.5, duration: 0.8 }}
+                    viewport={{ once: true }}
+                  />
+                )}
+              </motion.div>
+            ))}
           </div>
 
-          <motion.div initial={{ opacity: 0, scaleX: 0 }} whileInView={{ opacity: 1, scaleX: 1 }} transition={{ delay: 0.8, duration: 1 }} viewport={{ once: true }} className="mt-16 text-center">
-            <div className="inline-block relative">
-              <div className="h-px w-32 bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-auto mb-4" />
-              <div className="text-sm text-gray-500">Integrated Platform</div>
-            </div>
+          {/* Bottom CTA Section */}
+          <motion.div
+            className="text-center mt-24"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <motion.div
+              className="inline-block relative"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <motion.button
+                className="btn-premium text-white px-12 py-4 rounded-2xl font-semibold text-lg shadow-2xl relative overflow-hidden"
+                animate={{
+                  boxShadow: [
+                    '0 10px 30px rgba(102, 126, 234, 0.3)',
+                    '0 20px 60px rgba(102, 126, 234, 0.5)',
+                    '0 10px 30px rgba(102, 126, 234, 0.3)',
+                  ],
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <span className="relative z-10">Experience the Future of Dealership Management</span>
+                
+                {/* Animated border */}
+                <motion.div
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'conic-gradient(from 0deg, #667eea, #764ba2, #f093fb, #667eea)',
+                    padding: '2px',
+                  }}
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                />
+                <div className="absolute inset-[2px] rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600" />
+              </motion.button>
+            </motion.div>
+            
+            <motion.p
+              className="text-gray-400 mt-6 text-lg"
+              animate={{
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              Join 500+ dealerships already transforming their operations
+            </motion.p>
           </motion.div>
         </div>
       </section>
