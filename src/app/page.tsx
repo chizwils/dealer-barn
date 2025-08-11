@@ -205,16 +205,21 @@ export default function Home() {
           >
             <Logo height={32} width={160} />
             <div className="hidden md:flex items-center gap-6 text-sm">
-              {['PRODUCTS', 'PRICING', 'BLOG'].map((item, i) => (
+              {['FEATURES', 'ROADMAP', 'TESTIMONIALS'].map((item, i) => (
                 <motion.button
                   key={item}
                   className="text-gray-700 hover:text-gray-900 relative"
                   whileHover={{ y: -2 }}
                   transition={{ duration: 0.2 }}
+                  onClick={() => {
+                    const targetId = item === 'FEATURES' ? 'features' : 
+                                   item === 'ROADMAP' ? 'roadmap' : 'testimonials';
+                    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                 >
                   {item}
                   <motion.div
-                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-green-600"
+                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-600"
                     initial={{ scaleX: 0 }}
                     whileHover={{ scaleX: 1 }}
                     transition={{ duration: 0.2 }}
@@ -232,8 +237,8 @@ export default function Home() {
               WATCH DEMO
             </motion.button>
             <motion.button 
-              className="bg-green-800 hover:bg-green-900 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors"
-              whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(34, 197, 94, 0.2)" }}
+              className="bg-blue-800 hover:bg-blue-900 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors"
+              whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(59, 130, 246, 0.2)" }}
               whileTap={{ scale: 0.95 }}
             >
               START FOR FREE
@@ -298,12 +303,12 @@ export default function Home() {
               className="flex flex-col sm:flex-row gap-4 mb-12"
             >
               <motion.button 
-                className="bg-green-800 hover:bg-green-900 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors relative overflow-hidden"
-                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(34, 197, 94, 0.2)" }}
+                className="bg-blue-800 hover:bg-blue-900 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors relative overflow-hidden"
+                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.2)" }}
                 whileTap={{ scale: 0.95 }}
               >
                 <motion.span
-                  className="absolute inset-0 bg-gradient-to-r from-green-600 to-green-700"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700"
                   initial={{ x: '-100%' }}
                   whileHover={{ x: '0%' }}
                   transition={{ duration: 0.3 }}
@@ -359,7 +364,7 @@ export default function Home() {
                 <div className="flex gap-2">
                   <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
                   <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
                 </div>
                 <div className="flex-1 text-center text-sm text-gray-600">DealerBarn Dashboard</div>
               </div>
@@ -535,7 +540,7 @@ export default function Home() {
       </section>
 
       {/* Clean Features Grid with Dotted Lines */}
-      <section className="px-6 py-20 bg-white relative">
+      <section id="features" className="px-6 py-20 bg-white relative">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -668,7 +673,7 @@ export default function Home() {
       </section>
 
       {/* Adaline-Style Testimonials & Metrics Section */}
-      <section className="px-6 py-20 bg-gray-50">
+      <section id="testimonials" className="px-6 py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1066,7 +1071,7 @@ export default function Home() {
       </section>
 
       {/* Clean CTA Section */}
-      <section className="px-6 py-20 bg-green-800 text-white">
+      <section className="px-6 py-20 bg-blue-800 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1078,7 +1083,7 @@ export default function Home() {
             <h2 className="text-4xl font-roc font-medium mb-6">
               Join 500+ Dealerships Already Transforming Their Operations
             </h2>
-            <p className="text-xl text-green-100 mb-8">
+            <p className="text-xl text-blue-100 mb-8">
               Get VIP early access to DealerBarn and be among the first to eliminate spreadsheet chaos forever.
             </p>
           </motion.div>
@@ -1099,8 +1104,8 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="flex items-center gap-3 text-left"
               >
-                <div className="text-green-300 text-sm">✓</div>
-                <span className="text-green-100">{prop}</span>
+                <div className="text-blue-300 text-sm">✓</div>
+                <span className="text-blue-100">{prop}</span>
               </motion.div>
             ))}
           </div>
@@ -1116,11 +1121,11 @@ export default function Home() {
             <input
               type="email"
               placeholder="Enter your email address"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-white text-gray-900"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-900"
             />
             <motion.button
               type="submit"
-              className="bg-white hover:bg-gray-100 text-green-800 px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
+              className="bg-white hover:bg-gray-100 text-blue-800 px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -1128,7 +1133,7 @@ export default function Home() {
             </motion.button>
           </motion.form>
           
-          <p className="text-green-200 text-sm">
+          <p className="text-blue-200 text-sm">
             We respect your privacy. Unsubscribe anytime.
           </p>
         </div>
