@@ -1,7 +1,7 @@
 'use client';
 
 import Logo from '@/components/Logo';
-import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 
 const AnimatedCounter = ({ end, duration = 2 }: { end: number; duration?: number }) => {
@@ -25,20 +25,8 @@ const AnimatedCounter = ({ end, duration = 2 }: { end: number; duration?: number
   return <span ref={ref}>{count}</span>;
 };
 
-const FloatingCard = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.6, ease: "easeOut" }}
-    whileHover={{ y: -5, transition: { duration: 0.2 } }}
-    viewport={{ once: true }}
-  >
-    {children}
-  </motion.div>
-);
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState(0);
   const [activeStep, setActiveStep] = useState(0);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll();
@@ -100,7 +88,7 @@ export default function Home() {
 
     // passive:false so we can preventDefault
     window.addEventListener('wheel', onWheel, { passive: false });
-    return () => window.removeEventListener('wheel', onWheel as any);
+    return () => window.removeEventListener('wheel', onWheel as EventListener);
   }, [lockRoadmap]);
 
   // Route touch (mobile) to the right panel while locked
@@ -140,8 +128,8 @@ export default function Home() {
     window.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
-      window.removeEventListener('touchstart', onTouchStart as any);
-      window.removeEventListener('touchmove', onTouchMove as any);
+      window.removeEventListener('touchstart', onTouchStart as EventListener);
+      window.removeEventListener('touchmove', onTouchMove as EventListener);
     };
   }, [lockRoadmap]);
 
@@ -205,7 +193,7 @@ export default function Home() {
           >
             <Logo height={32} width={160} />
             <div className="hidden md:flex items-center gap-6 text-sm">
-              {['FEATURES', 'ROADMAP', 'TESTIMONIALS'].map((item, i) => (
+              {['FEATURES', 'ROADMAP', 'TESTIMONIALS'].map((item) => (
                 <motion.button
                   key={item}
                   className="text-gray-700 hover:text-gray-900 relative"
@@ -451,7 +439,7 @@ export default function Home() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl font-roc font-medium mb-6 text-gray-900">
-              Every Day You Don't Automate, You're Losing Money
+              Every Day You Don&apos;t Automate, You&apos;re Losing Money
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Most dealerships lose 15-20 hours per week on manual tasks that should take minutes.
@@ -550,7 +538,7 @@ export default function Home() {
             className="text-center mb-20"
           >
             <h2 className="text-4xl font-roc font-medium text-gray-900 mb-6">
-              Everything You Need. Nothing You Don't.
+              Everything You Need. Nothing You Don&apos;t.
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               DealerBarn replaces 6+ tools with one intelligent platform designed specifically for modern dealerships.
@@ -722,7 +710,7 @@ export default function Home() {
                     className="bg-white p-6 rounded-lg border border-gray-200"
                   >
                     <blockquote className="text-gray-700 mb-4 leading-relaxed">
-                      "{testimonial.quote}"
+                      &quot;{testimonial.quote}&quot;
                     </blockquote>
                     <cite className="not-italic">
                       <div className="font-medium text-gray-900">{testimonial.author}</div>
@@ -822,7 +810,7 @@ export default function Home() {
               Your Beta Journey
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We're building the future of dealership management, and we want you to be part of the journey.
+              We&apos;re building the future of dealership management, and we want you to be part of the journey.
             </p>
           </motion.div>
 
